@@ -48,29 +48,25 @@ public class UserController {
 
     @PostMapping("/users")
     public ResponseEntity<?> create(@RequestBody User user) {
-        System.out.println(user);
-//        try {
-//            service.getUserByEmail(user.getEmail());
-//            return new ResponseEntity<>("Specified email is busy", HttpStatus.CONFLICT);
-//        } catch (Exception e) {/*ignore*/}
-//
-//        try {
-//            user.setAge(Byte.parseByte(new_age));
-//        } catch (NumberFormatException e) {/*ignore*/}
-//
-//        user.setRoles(service.getRolesFromArray(new_roles));
-//
-//        service.addUser(user);
-//
-//        return new ResponseEntity<>(HttpStatus.CREATED);
-        return null;
+        try {
+            service.getUserByEmail(user.getEmail());
+            return new ResponseEntity<>("Specified email is busy", HttpStatus.CONFLICT);
+        } catch (Exception e) {/*ignore*/}
+
+        try {
+            service.addUser(user);
+            User addedUser = service.getUserByEmail(user.getEmail());
+            return new ResponseEntity<>(addedUser, HttpStatus.CREATED);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @PatchMapping("/users/{id}")
     public ResponseEntity<?> update(@PathVariable("id") long id,
-                                    @ModelAttribute("new_user") User user,
-                                    @RequestParam(required = false) String[] new_roles,
-                                    @RequestParam(required = false) String new_age) {
+                                    @RequestBody User user) {
         try {
             if (service.getUserByEmail(user.getEmail()).getId() != id) {
                 return new ResponseEntity<>("Specified email is busy", HttpStatus.CONFLICT);
@@ -78,15 +74,10 @@ public class UserController {
         } catch (Exception e) {/*ignore*/}
 
         try {
-            user.setAge(Byte.parseByte(new_age));
-        } catch (NumberFormatException e) {/*ignore*/}
-
-        user.setId(id);
-        user.setRoles(service.getRolesFromArray(new_roles));
-
-        try {
+            user.setId(id);
             service.updateUser(user);
-            return new ResponseEntity<>(HttpStatus.OK);
+            User updatedUser = service.getUser(id);
+            return new ResponseEntity<>(updatedUser, HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
         }

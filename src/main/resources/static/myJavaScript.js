@@ -11,10 +11,12 @@ function sendRequest(url, method, body) {
         body: body,
         headers: headers
     }).then(response => {
-        if (response.ok) {
+        if (response.ok && method === 'DELETE') {
+            return 'ok';
+        } else if (response.ok) {
             return response.json();
         } else {
-            alert("Ошибка HTTP: " + response.status);
+            alert('Ошибка HTTP: ' + response.status);
         }
     })
 }
@@ -31,10 +33,22 @@ function cellCreation(row, object, field) {
 /**
  * Функция вставки данных всех пользователей в таблицу
  */
-function insertUsersRows (arrayOfUsers) {
-    let myButtons =
-        '<td><a class="btn" data-action="edit" style="color: white; background-color: #17a2b8">Edit</a></td>\n' +
-        '<td><a class="btn" data-action="delete" style="color: white; background-color: #dc3545">Delete</a></td>';
+function insertUsersRows(arrayOfUsers) {
+    function getButtons(userId) {
+        let buttons =
+            `<td><a class="btn"
+                    data-bs-toggle="modal"
+                    href="#editUserModal"
+                    data-bs-userId="${userId}"
+                    style="color: white; background-color: #17a2b8">Edit</a></td>\n` +
+            `<td><a class="btn"
+                    data-bs-toggle="modal"
+                    href="#deleteUserModal"
+                    data-bs-userId="${userId}"
+                    style="color: white;
+                    background-color: #dc3545">Delete</a></td>`;
+        return buttons;
+    }
 
     let allUsersTableBody = document.getElementById('allUsersTableBody');
 
@@ -48,7 +62,7 @@ function insertUsersRows (arrayOfUsers) {
         cellCreation(row, user, 'email');
         cellCreation(row, user, 'roles');
 
-        row.insertAdjacentHTML('beforeend', myButtons);
+        row.insertAdjacentHTML('beforeend', getButtons(user.id));
 
         allUsersTableBody.append(row);
     }
@@ -57,7 +71,7 @@ function insertUsersRows (arrayOfUsers) {
 /**
  * Функция вставки данных текущего пользователя в таблицу
  */
-function insertUserRow (user) {
+function insertUserRow(user) {
     let row = document.getElementById('currentUserTableBodyRow');
     cellCreation(row, user, 'id');
     cellCreation(row, user, 'firstName');
@@ -65,6 +79,31 @@ function insertUserRow (user) {
     cellCreation(row, user, 'age');
     cellCreation(row, user, 'email');
     cellCreation(row, user, 'roles');
+}
+
+/**
+ * Функция поиска ряда в таблице по id пользователя
+ */
+function findRow(userId) {
+    let rows = document.getElementById('allUsersTableBody').rows;
+    for (let i = 0; i < rows.length; i++) {
+        if (rows[i].cells[0].textContent == userId) {
+            return rows[i];
+        }
+    }
+}
+
+/**
+ * Функция замены данных в ряде таблицы
+ */
+function replaceUserRow(user) {
+    let row = findRow(user.id);
+    row.cells[0].textContent = user.id;
+    row.cells[1].textContent = user.firstName;
+    row.cells[2].textContent = user.lastName;
+    row.cells[3].textContent = user.age;
+    row.cells[4].textContent = user.email;
+    row.cells[5].textContent = user.roles;
 }
 
 /**
@@ -76,6 +115,91 @@ function getCookie(name) {
     ));
     return matches ? decodeURIComponent(matches[1]) : undefined;
 }
+
+/**
+ * Функция - Post / Patch / Delete request из формы
+ */
+function actionWithUser(form, action) {
+
+    let pathVar = '';
+    let body = '';
+
+    if (action !== 'POST') {
+        pathVar = '/' + form.id.value;
+    }
+
+    if (action !== 'DELETE') {
+        function getRoleObjectsArray(formRoles) {
+            return Array.from(formRoles)
+                .filter(option => option.selected)
+                .map(option => option.value)
+                .map(value => { return value === 'ROLE_ADMIN'
+                    ? {id: 1, role: 'ROLE_ADMIN'}
+                    : {id: 2, role: 'ROLE_USER'};
+                })
+        }
+
+        let user = {
+            firstName: form.firstName.value,
+            lastName: form.lastName.value,
+            age: form.age.value,
+            email: form.email.value,
+            password: form.password.value,
+            roles: getRoleObjectsArray(form.roles)
+        };
+
+        body = JSON.stringify(user);
+    }
+
+    sendRequest(`http://localhost:8080/users${pathVar}`, action, body)
+        .then((data) => {
+            if (data != null) {
+                switch(action) {
+                    case 'POST':
+                        alert('Пользователь добавлен');
+                        insertUsersRows([data]);
+                        form.reset();
+                        break;
+                    case 'PATCH':
+                        replaceUserRow(data);
+                        document.getElementById('closeEditUserModal').click();
+                        form.reset();
+                        break;
+                }
+            }
+            if (data === 'ok') {
+                findRow(form.id.value).remove();
+                document.getElementById('closeDeleteUserModal').click();
+                form.reset();
+            }
+        });
+}
+
+/**
+ * Функция - создать лисинер, заполняющий форму
+ */
+function modalFormListener(formId, modalId) {
+    let modal = document.getElementById(modalId);
+    modal.addEventListener('show.bs.modal', (event) => {
+        let form = document.getElementById(formId);
+        let userId = event.relatedTarget.getAttribute('data-bs-userId');
+
+        let row = findRow(userId);
+
+        form.id.value = userId;
+        form.firstName.value = row.cells[1].textContent;
+        form.lastName.value = row.cells[2].textContent;
+        form.age.value = row.cells[3].textContent;
+        form.email.value = row.cells[4].textContent;
+        form.roles.options[0].selected = row.cells[5].textContent.includes('USER');
+        form.roles.options[1].selected = row.cells[5].textContent.includes('ADMIN');
+    })
+}
+
+
+
+
+
 
 
 // Отправляем запрос на всех пользователей, вставляем инфо в таблицу
@@ -92,29 +216,6 @@ sendRequest(`http://localhost:8080/users/${getCookie('UserId')}`, 'GET')
         insertUserRow(data);
     });
 
-// Отправляем POST запрос - создание нового пользователя
-// Обработка формы - создание нового пользователя
-function newUser(form) {
-    let user = {};
-    user.firstName = form.firstName.value;
-    user.lastName = form.lastName.value;
-    user.age = Number(form.age.value);
-    user.email = form.email.value;
-    user.password = form.password.value;
-    user.roles = Array.from(form.roles)
-        .filter(option => option.selected)
-        .map(option => option.value);
-
-    alert(user);
-    console.log(user);
-
-    let jsonUser = JSON.stringify(user);
-    alert(jsonUser);
-    console.log(jsonUser)
-
-
-    sendRequest('http://localhost:8080/users', 'POST', jsonUser)
-        .then();
-}
-
-
+// Добавляем лисенеры на на заполнение форм в модалках
+modalFormListener('editUserForm' ,'editUserModal');
+modalFormListener('deleteUserForm', 'deleteUserModal');

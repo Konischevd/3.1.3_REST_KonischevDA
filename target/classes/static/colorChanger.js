@@ -1,3 +1,6 @@
+/**
+ * Функция рандомной смены фона элемента на некоторое время
+ */
 function bgColorChanger(element, maxDelta, maxColors, timeOut) {
     let rand = (min, max) => Math.round(Math.random() * (max - min) + min);
     let red = rand(0, 255);
@@ -29,10 +32,3 @@ function bgColorChanger(element, maxDelta, maxColors, timeOut) {
     }
     setTimeout(setBG, maxColors * timeOut + timeOut, element, 255, 255, 255);
 }
-
-// Мигающий при фон при клике
-// tbody.addEventListener('click', {
-//     handleEvent(evt) {
-//         bgColorChanger(evt.target.closest('tr'), 20, 60, 50);
-//     }
-// })

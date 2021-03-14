@@ -1,6 +1,5 @@
 package web.models;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -8,7 +7,6 @@ import javax.persistence.*;
 import java.util.Collection;
 import java.util.Set;
 
-//@JsonIdentityInfo(generator= ObjectIdGenerators.IntSequenceGenerator.class, property="@id")
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -24,8 +22,7 @@ public class User implements UserDetails {
     @Column
     private String password;
 
-    @JsonManagedReference
-    @ManyToMany(cascade = {CascadeType.MERGE}, fetch = FetchType.EAGER)
+    @ManyToMany(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     private Set<Role> roles;
 // Поля для UserDetails
 

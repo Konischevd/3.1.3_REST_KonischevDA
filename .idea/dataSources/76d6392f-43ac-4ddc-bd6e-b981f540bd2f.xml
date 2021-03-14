@@ -979,7 +979,7 @@ SELECT|sys.sys_config
       <ColNames>email</ColNames>
       <UnderlyingIndexName>UK_6dotkott2kjsp8vw4d0m25fb7</UnderlyingIndexName>
     </key>
-    <column id="302" parent="287" name="users_id">
+    <column id="302" parent="287" name="user_id">
       <Position>1</Position>
       <DataType>bigint|0s</DataType>
       <NotNull>1</NotNull>
@@ -995,12 +995,12 @@ SELECT|sys.sys_config
     </index>
     <key id="305" parent="287" name="PRIMARY">
       <NameSurrogate>1</NameSurrogate>
-      <ColNames>users_id
+      <ColNames>user_id
 roles_id</ColNames>
       <Primary>1</Primary>
     </key>
-    <foreign-key id="306" parent="287" name="FKml90kef4w2jy7oxyqv742tsfc">
-      <ColNames>users_id</ColNames>
+    <foreign-key id="306" parent="287" name="FK2o0jvgh89lemvvo17cbqvdxaa">
+      <ColNames>user_id</ColNames>
       <RefTableName>users</RefTableName>
       <RefColNames>id</RefColNames>
     </foreign-key>
